@@ -13,6 +13,7 @@ class MapLocation extends Component
     use WithFileUploads;
 
     public $categories = [];
+    public $selectedCategory = "all";
     public $category_id;
     public $long, $lat, $title, $description, $address, $category, $icon;
     public $geoJson;
@@ -25,6 +26,7 @@ class MapLocation extends Component
     {
         $locations = Record::orderBy('created_at', 'desc')->get();
         $customLocation = [];
+        // dd($locations);
 
         foreach ($locations as $location) {
             $categoryName = $location->category->name;
@@ -54,18 +56,32 @@ class MapLocation extends Component
                     'title' => $location->title,
                     'description' => $location->description,
                     'address' => $location->address,
-                    'icon' => $iconUrl
+                    'icon' => $iconUrl,
+                    'category' => $location->category->name
                 ]
             ];
         }
 
-        $geloLocation = [
+        $geoLocation = [
             'type' => 'FeatureCollection',
             'features' => $customLocation
         ];
 
-        $geoJson = collect($geloLocation)->toJson();
+        $geoJson = collect($geoLocation)->toJson();
         $this->geoJson = $geoJson;
+        // dd($geoJson);
+    }
+
+    public function updateSelectedCategory(){
+        $filteredFeatures = collect(json_decode($this->geoJson, true)['features'])->filter(function ($feature) {
+            return $this->selectedCategory === 'all' || $feature->properties->category === $this->selectedCategory;
+        });
+        $this->geoJson = json_encode([
+            'type' => 'FeatureCollection',
+            'features' => $filteredFeatures->toArray()
+        ]);
+
+        $this->emit('filterUpdate', $this->geoJson);
     }
 
     private function clearForm()

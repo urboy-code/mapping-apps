@@ -75,18 +75,29 @@
                         @enderror
                     </div>
                 </div>
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28" type="submit">
-                    Button
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-28"
+                    type="submit">
+                    Submit
                 </button>
         </form>
     </div>
+</div>
+<div class="absolute top-5 right-20 bg-white p-4 rounded-lg shadow-lg w-40 z-10 ">
+    <h1 class="text-center">Filter</h1>
+    <select wire:model="selectedCategory"
+        class="mt-1 block w-full rounded-md border-slate-500 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+        <option value="all">All</option>
+        <option value="Kuliner">Kuliner</option>
+        <option value="Pariwisata">Pariwisata</option>
+        <option value="Pendidikan">Pendidikan</option>
+    </select>
 </div>
 
 
 
 @push('scripts')
     <script>
-        const defaultLocation = [110.4088018890273, -6.9808335846684315];
+        const defaultLocation = [114.19563595866873, -2.202274179431299];
         // defaultLocation = [107.62059, -6.90389];
 
         mapboxgl.accessToken =
@@ -94,11 +105,15 @@
         const map = new mapboxgl.Map({
             container: "map",
             center: defaultLocation,
-            zoom: 11,
+            zoom: 4,
             style: 'mapbox://styles/mapbox/streets-v11'
         });
 
+        // console.log(geoJson);
+
         const loadLocations = (geoJson) => {
+            document.querySelectorAll('.mapboxgl-marker').forEach(marker => marker.remove());
+
             geoJson.features.forEach((location) => {
                 const {
                     geometry,
@@ -115,8 +130,6 @@
                     category
                 } = properties
 
-                // console.log(location.properties.icon);
-
                 let markerElement = document.createElement('div');
                 markerElement.className = 'marker' + locationId;
                 markerElement.id = locationId;
@@ -128,24 +141,29 @@
 
                 const content = `
                     <div style="overflow-y; max-height:500px, width:100%">
-                        <table>
+                        <table class="table table-sm m-2  border border-slate-600">
                             <tbody>
                                 <tr>
-                                    <td>Title</td>
-                                    <td>${category}</td>
+                                    <td class="border border-slate-700 px-3">Title</td>
+                                    <td class="border border-slate-700 px-3">${title}</td>
                                 </tr>
                                 <tr>
-                                    <td>Address</td>
-                                    <td>${address}</td>
+                                    <td class="border border-slate-700 px-3">Category</td>
+                                    <td class="border border-slate-700 px-3">${category}</td>
                                 </tr>
                                 <tr>
-                                    <td>Description</td>
-                                    <td>${description}</td>
+                                    <td class="border border-slate-700 px-3">Address</td> 
+                                    <td class="border border-slate-700 px-3">${address}</td>
+                                </tr>
+                                <tr>
+                                    <td class="border border-slate-700 px-3">Description</td>
+                                    <td class="border border-slate-700 px-3">${description}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 `;
+
 
                 const popUp = new mapboxgl.Popup({
                     offset: 25
@@ -154,11 +172,15 @@
                 new mapboxgl.Marker(markerElement)
                     .setLngLat(geometry.coordinates)
                     .setPopup(popUp)
-                    .addTo(map)
+                    .addTo(map);
             })
         }
 
         loadLocations({!! $geoJson !!});
+
+        Livewire.on('filterUpdate', (geoJson) => {
+            loadLocations(JSON.parse($geoJson));
+        })
 
         window.addEventListener('locationAdded', (e) => {
             loadLocations(JSON.parse(e.detail));
